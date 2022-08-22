@@ -1,0 +1,44 @@
+version: '3.9'
+services:
+  api:
+    container_name: api
+    working_dir: /backend
+    build: ./
+    ports:
+      - 3001:3001
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+    volumes:
+      - ./:/backend
+  redis:
+    container_name: redis
+    image: redis:7-alpine
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      timeout: 30s
+      retries: 5
+  db:
+    image: postgres:14.5-alpine
+    container_name: db
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=123456
+    restart: always
+    volumes:
+      - database_volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      timeout: 10s
+      retries: 5
+volumes:
+  database_volume:
